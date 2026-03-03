@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestor de Tareas · UNAD 740508</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Literata:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f5f2ee;--card:#fff;--border:#e2ddd6;--text:#1a1714;--muted:#8a8278;--accent:#c85a1e;--g:#2a6e4e;--b:#1e4f8a;--w:#b87c10;--soft:#faf8f5;--sh:0 2px 12px rgba(0,0,0,.08);--shlg:0 8px 32px rgba(0,0,0,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;min-height:100vh}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+@media(max-width:768px){.app{grid-template-columns:1fr}}
+.sidebar{background:var(--text);color:#f5f2ee;padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+@media(max-width:768px){.sidebar{display:none}}
+.sb-logo{font-size:1.1rem;font-weight:800;padding:0 8px 20px;border-bottom:1px solid #fff2;margin-bottom:10px;color:#fff}
+.sb-logo span{color:var(--accent)}
+.sb-sec{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:#fff5;padding:14px 8px 4px}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:.85rem;color:#fff9;transition:all .15s}
+.nav:hover{background:#fff1;color:#fff}
+.nav.on{background:var(--accent);color:#fff}
+.nbadge{margin-left:auto;background:#fff2;font-size:.68rem;padding:2px 7px;border-radius:99px}
+.nav.on .nbadge{background:#fff3}
+.sb-stats{margin-top:auto;background:#fff1;border-radius:10px;padding:14px}
+.ss-t{font-size:.72rem;color:#fff6;margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em}
+.ss-r{display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;color:#fff8}
+.ss-r span:last-child{color:#fff;font-weight:700}
+/* api config badge */
+.api-badge{font-size:.68rem;padding:3px 8px;border-radius:6px;margin:0 8px 16px;display:flex;align-items:center;gap:6px}
+.api-badge.ok{background:#1a3d2b;color:#6de0a0}
+.api-badge.err{background:#3d1a1a;color:#e07a7a}
+.api-badge.loading{background:#2d2820;color:#fff6}
+.main{padding:28px 32px}
+@media(max-width:768px){.main{padding:16px}}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.ptitle{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.ptitle span{color:var(--accent)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:#a84818}
+.btn-g{background:transparent;border:1.5px solid var(--border);color:var(--muted)}.btn-g:hover{border-color:var(--text);color:var(--text)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.abtn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:700;border:none;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .15s;text-decoration:none}
+.bwa{background:#e8f8ef;color:#25a550}.bwa:hover{background:#d0f0e0}
+.bml{background:#eaf2fd;color:#1e4f8a}.bml:hover{background:#d0e4f8}
+.filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.fb{padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--card);font-family:'Cabinet Grotesk',sans-serif;font-size:.78rem;cursor:pointer;color:var(--muted);transition:all .15s}
+.fb:hover{border-color:var(--text);color:var(--text)}
+.fb.on{background:var(--text);color:#fff;border-color:var(--text)}
+.tgrid{display:flex;flex-direction:column;gap:12px}
+.tcard{background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s}
+.tcard:hover{box-shadow:var(--shlg)}
+.tcard.done{opacity:.6}
+.thead{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;cursor:pointer}
+.tchk{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.tcard.done .tchk{background:var(--g);border-color:var(--g)}
+.tchk::after{content:'✓';font-size:12px;color:#fff;display:none}
+.tcard.done .tchk::after{display:block}
+.tinfo{flex:1;min-width:0}
+.tcourse{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.tname{font-size:.95rem;font-weight:700;line-height:1.3}
+.tdesc{font-family:'Literata',serif;font-style:italic;font-size:.82rem;color:var(--muted);margin-top:4px}
+.tmeta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.tag{font-size:.7rem;padding:3px 8px;border-radius:6px;font-weight:700}
+.tr{background:#fdecea;color:#c0392b}.ty{background:#fdf6e3;color:#b87c10}.tgr{background:#eafaf1;color:#2a6e4e}
+.tgray{background:#f0ede8;color:var(--muted)}.tbl{background:#eaf2fd;color:#1e4f8a}.tpu{background:#f3eeff;color:#6b3fa0}
+.tpts{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.tdue{font-size:.75rem;color:var(--muted);flex-shrink:0}
+.tpbar{height:3px;background:var(--border)}
+.tpfill{height:100%;transition:width .4s ease}
+.tbody{display:none;padding:16px 20px 20px;border-top:1px solid var(--border)}
+.tbody.open{display:block}
+.sitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s}
+.sitem:hover{background:var(--soft)}
+.sitem.sdone .slbl{text-decoration:line-through;color:var(--muted)}
+.schk{width:16px;height:16px;border-radius:4px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.sitem.sdone .schk{background:var(--g);border-color:var(--g)}
+.schk::after{content:'✓';font-size:9px;color:#fff;display:none}
+.sitem.sdone .schk::after{display:block}
+.slbl{font-size:.84rem;flex:1}
+.narea{width:100%;min-height:80px;background:var(--soft);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Literata',serif;font-size:.88rem;color:var(--text);resize:vertical;outline:none;line-height:1.5;transition:border-color .15s}
+.narea:focus{border-color:var(--accent)}
+.nlbl{font-size:.75rem;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.aipanel{background:linear-gradient(135deg,#1a1714,#2d2820);border-radius:12px;padding:16px;margin-top:14px}
+.ait{font-size:.75rem;color:#fff7;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ait::before{content:'✦';color:var(--accent)}
+.aims{max-height:220px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.aim{padding:10px 12px;border-radius:10px;font-size:.83rem;line-height:1.55}
+.aim.user{background:#fff1;color:#fff;align-self:flex-end;max-width:80%}
+.aim.assistant{background:#fff1;color:#ffffffcc;border:1px solid #fff1}
+.aim.loading{color:#fff5;font-style:italic}
+.airow{display:flex;gap:8px}
+.aiinp{flex:1;background:#fff1;border:1px solid #fff2;color:#fff;border-radius:8px;padding:8px 12px;font-family:'Cabinet Grotesk',sans-serif;font-size:.83rem;outline:none}
+.aiinp::placeholder{color:#fff4}
+.aiinp:focus{border-color:var(--accent)}
+.aibtn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:.82rem;font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+.aibtn:disabled{background:#fff2;cursor:not-allowed}
+.aiqb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.aiq{background:#fff1;border:1px solid #fff2;color:#ffffffaa;border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif}
+.aiq:hover{background:#fff2;color:#fff}
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.moverlay.open{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:28px;width:90%;max-width:520px;box-shadow:var(--shlg);animation:pop .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:1.1rem;font-weight:800;margin-bottom:20px}
+.fg{margin-bottom:14px}
+.fl{font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;display:block}
+.fi,.fs,.fta{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:.88rem;color:var(--text);background:var(--soft);outline:none;transition:border-color .15s}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--accent)}
+.fta{min-height:80px;resize:vertical;font-family:'Literata',serif}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.ccard{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--sh)}
+.ctit{font-size:1rem;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.upz{border:2px dashed var(--border);border-radius:12px;padding:24px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--soft)}
+.upz:hover,.upz.drag{border-color:var(--accent);background:#fdf5f0}
+.tplcard{border:1.5px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .15s;background:var(--soft)}
+.tplcard:hover,.tplcard.sel{border-color:var(--accent);background:#fdf5f0}
+.msgprev{background:var(--soft);border:1.5px solid var(--border);border-radius:8px;padding:12px;font-size:.83rem;font-family:'Literata',serif;line-height:1.6;white-space:pre-wrap;min-height:80px;max-height:160px;overflow-y:auto}
+.bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--text);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:14px}
+.bulkbar span{font-size:.85rem;flex:1}
+.bnum{background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:99px}
+.sttable{width:100%;border-collapse:collapse;font-size:.84rem}
+.sttable th{background:var(--soft);padding:8px 12px;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap}
+.sttable td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.sttable tr:last-child td{border-bottom:none}
+.sttable tr:hover td{background:var(--soft)}
+.estsel{border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;font-family:'Cabinet Grotesk',sans-serif;cursor:pointer;border:1px solid}
+.sbox{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;min-width:90px;cursor:pointer;transition:all .15s}
+.sbox:hover{box-shadow:var(--sh)}
+.snum{font-size:1.6rem;font-weight:800;line-height:1}
+.slb{font-size:.7rem;color:var(--muted);margin-top:3px}
+/* spinner */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #fff3;border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* toast */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 18px;border-radius:10px;font-size:.84rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="sb-logo">Gestor <span>UNAD</span><br><span style="font-weight:300;font-size:.75rem;color:#fff6">740508 · Tec. e Informática V</span></div>
+  <div id="api-status" class="api-badge loading"><span class="spinner"></span> Conectando...</div>
+
+  <div class="sb-sec">Tareas</div>
+  <div class="nav on" onclick="setView('all',this)"><span>📋</span>Todas las tareas<span class="nbadge" id="b-all">0</span></div>
+  <div class="nav" onclick="setView('pending',this)"><span>⏳</span>Pendientes<span class="nbadge" id="b-pen">0</span></div>
+  <div class="nav" onclick="setView('inprogress',this)"><span>🔄</span>En progreso<span class="nbadge" id="b-pro">0</span></div>
+  <div class="nav" onclick="setView('done',this)"><span>✅</span>Completadas<span class="nbadge" id="b-don">0</span></div>
+
+  <div class="sb-sec">Cursos</div>
+  <div id="sb-courses"></div>
+  <div class="nav" onclick="openCM()" style="border:1.5px dashed #fff3;margin-top:4px"><span>＋</span>Agregar curso</div>
+
+  <div class="sb-sec">📨 Mensajería por curso</div>
+  <div id="sb-comm"></div>
+
+  <div class="sb-stats">
+    <div class="ss-t">Resumen</div>
+    <div class="ss-r"><span>Total puntos</span><span id="s-tot">0</span></div>
+    <div class="ss-r"><span>Puntos ganados</span><span id="s-don">0</span></div>
+    <div class="ss-r"><span>% completado</span><span id="s-pct">0%</span></div>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- Config panel (shown when API not configured) -->
+  <div id="config-panel" style="display:none;background:var(--card);border:2px solid var(--accent);border-radius:14px;padding:24px;margin-bottom:24px">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:8px">⚙️ Configura tu API</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Ingresa la URL de tu backend desplegado en Railway o Render:</div>
+    <div style="display:flex;gap:8px">
+      <input class="fi" id="api-url-input" placeholder="https://tu-app.railway.app" style="flex:1">
+      <button class="btn btn-p" onclick="saveApiUrl()">Guardar</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:8px">También puedes usar <code>http://localhost:3001</code> si corres el backend localmente</div>
+  </div>
+
+  <div class="topbar">
+    <div>
+      <div class="ptitle" id="v-title">Todas las <span>tareas</span></div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px" id="v-sub">Gestiona y trabaja tus actividades académicas</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-g btn-sm" onclick="openApiConfig()">⚙️ API</button>
+      <button class="btn btn-p" id="btn-new" onclick="openNewModal()">＋ Nueva tarea</button>
+    </div>
+  </div>
+  <div class="filters" id="fbar">
+    <button class="fb on" onclick="setF('all',this)">Todas</button>
+    <button class="fb" onclick="setF('urgent',this)">🔴 Urgentes</button>
+    <button class="fb" onclick="setF('ind',this)">👤 Independiente</button>
+    <button class="fb" onclick="setF('col',this)">👥 Colaborativa</button>
+    <button class="fb" onclick="setF('prueba',this)">📝 Pruebas</button>
+    <button class="fb" onclick="setF('Inicial',this)" style="border-color:#1e4f8a;color:#1e4f8a">Inicial</button>
+    <button class="fb" onclick="setF('Intermedio',this)" style="border-color:#b87c10;color:#b87c10">Intermedio</button>
+    <button class="fb" onclick="setF('Final',this)" style="border-color:#2a6e4e;color:#2a6e4e">Final</button>
+  </div>
+  <div class="tgrid" id="tc"></div>
+  <div id="comm-panel" style="display:none"></div>
+</main>
+</div>
+
+<!-- MODAL CURSO -->
+<div class="moverlay" id="m-course">
+  <div class="modal">
+    <h2>🗂 Gestionar cursos</h2>
+    <div id="clist" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:16px">
+      <div class="fl" style="margin-bottom:8px">Agregar nuevo curso</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="fl">Período</label><input class="fi" id="c-per" placeholder="2281"></div>
+        <div><label class="fl">Nombre</label><input class="fi" id="c-nam" placeholder="Tecnología e Informática V"></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="fl">Código</label><input class="fi" id="c-cod" placeholder="740508"></div>
+      <button class="btn btn-p" style="width:100%" onclick="addCourse()">＋ Agregar</button>
+    </div>
+    <div class="mact"><button class="btn btn-g" onclick="closeCM()">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TAREA -->
+<div class="moverlay" id="m-edit">
+  <div class="modal">
+    <h2>✏️ Editar tarea</h2>
+    <input type="hidden" id="e-id">
+    <div class="fg"><label class="fl">Nombre</label><input class="fi" id="e-nam"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Curso</label><select class="fs" id="e-crs"></select></div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="e-tip">
+        <option value="ind">👤 Independiente</option><option value="col">👥 Colaborativa</option><option value="prueba">📝 Prueba</option>
+      </select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Fecha cierre</label><input class="fi" id="e-due" type="date"></div>
+      <div class="fg"><label class="fl">Puntos</label><input class="fi" id="e-pts" type="number" min="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Descripción</label><textarea class="fta" id="e-dsc"></textarea></div>
+    <div class="fg"><label class="fl">Pasos (uno por línea)</label><textarea class="fta" id="e-sub" style="min-height:100px"></textarea></div>
+    <div class="mact"><button class="btn btn-g" onclick="closeEM()">Cancelar</button><button class="btn btn-p" onclick="updateTask()">💾 Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA TAREA -->
+<div class="moverlay" id="m-new">
+  <div class="modal">
+    <h2>➕ Nueva tarea</h2>
+    <div class="fg"><label class="fl">Nombre</label><input class="fi" id="f-nam" placeholder="Ej: Prueba Inicial..."></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Curso</label><select class="fs" id="f-crs"></select></div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="f-tip">
+        <option value="ind">👤 Independiente</option><option value="col">👥 Colaborativa</option><option value="prueba">📝 Prueba</option>
+      </select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Fecha cierre</label><input class="fi" id="f-due" type="date"></div>
+      <div class="fg"><label class="fl">Puntos</label><input class="fi" id="f-pts" type="number" placeholder="0" min="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Descripción</label><textarea class="fta" id="f-dsc"></textarea></div>
+    <div class="mact"><button class="btn btn-g" onclick="closeNM()">Cancelar</button><button class="btn btn-p" onclick="saveNewTask()">Guardar</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// API CONFIG — pon aquí la URL de tu backend
+// ═══════════════════════════════════════════════════
+let API_BASE = localStorage.getItem('unad-api-url') || '';
+const API_SECRET = localStorage.getItem('unad-api-secret') || '';
+
+function saveApiUrl(){
+  const url = document.getElementById('api-url-input').value.trim().replace(/\/$/,'');
+  if(!url){ toast('Ingresa una URL válida','err'); return; }
+  localStorage.setItem('unad-api-url', url);
+  API_BASE = url;
+  document.getElementById('config-panel').style.display='none';
+  toast('URL guardada. Cargando datos...','ok');
+  init();
+}
+function openApiConfig(){
+  document.getElementById('config-panel').style.display='block';
+  document.getElementById('api-url-input').value = API_BASE;
+  document.getElementById('config-panel').scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════
+// API HELPER
+// ═══════════════════════════════════════════════════
+async function api(method, path, body){
+  if(!API_BASE) throw new Error('API no configurada');
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-secret': API_SECRET,
+    },
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  if(!res.ok){
+    const err = await res.json().catch(()=>({error: res.statusText}));
+    throw new Error(err.error || res.statusText);
+  }
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════
+// LOCAL STATE (cache from API)
+// ═══════════════════════════════════════════════════
+let tasks    = [];
+let courses  = [];
+let progress = {}; // {taskId: [doneIndexes]}
+let students = {}; // {courseId: [{...}]}
+let entregas = {}; // {studentId__taskId: estado}
+
+let cView='all', cFilter='all';
+let ccourse='', cact='', cfil='todos', ctpl='recordatorio';
+let csel=new Set();
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = (type==='ok'?'✅ ':type==='err'?'❌ ':'⏳ ') + msg;
+  t.className = 'show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.className='', 2800);
+}
+
+// ═══════════════════════════════════════════════════
+// INIT — load everything from API
+// ═══════════════════════════════════════════════════
+async function init(){
+  const statusEl = document.getElementById('api-status');
+  if(!API_BASE){
+    statusEl.className='api-badge err';
+    statusEl.innerHTML='❌ API no configurada';
+    document.getElementById('config-panel').style.display='block';
+    document.getElementById('tc').innerHTML='<div class="empty"><div style="font-size:2rem">⚙️</div><div>Configura la URL del backend arriba para comenzar</div></div>';
+    return;
+  }
+  statusEl.className='api-badge loading';
+  statusEl.innerHTML='<span class="spinner"></span> Conectando...';
+  try {
+    // Health check
+    await api('GET','/');
+
+    // Load courses and tasks in parallel
+    const [c, t] = await Promise.all([
+      api('GET','/api/courses'),
+      api('GET','/api/tasks'),
+    ]);
+    courses = c;
+    tasks   = t;
+
+    // Load subtask progress for all tasks
+    const progResults = await Promise.all(
+      tasks.map(t => api('GET',`/api/tasks/${t._id}/progress`).then(r=>({id:t._id, items:r.doneItems})))
+    );
+    progress = {};
+    progResults.forEach(r => progress[r.id] = r.items || []);
+
+    statusEl.className='api-badge ok';
+    statusEl.innerHTML=`✅ MongoDB conectado`;
+    render();
+    rebuildSB();
+  } catch(e){
+    statusEl.className='api-badge err';
+    statusEl.innerHTML=`❌ ${e.message}`;
+    toast('Error de conexión: ' + e.message, 'err');
+    // Fallback: show config
+    document.getElementById('config-panel').style.display='block';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+const cLabel=id=>{const c=courses.find(c=>c.period===id||c._id===id);return c?`${c.period}·${c.code}`:id};
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const pDate=s=>{if(!s)return new Date(9999,0,1);const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const dLeft=d=>Math.ceil((pDate(d)-today())/86400000);
+
+function statusTag(t){
+  if(t.done) return['tgray','✔ Completada'];
+  const d=dLeft(t.due);
+  if(d<0) return['tgray','Cerrada'];
+  if(d<=3) return['tr',`🔴 ${d}d`];
+  if(d<=7) return['ty',`🟡 ${d}d`];
+  return['tgr',`🟢 ${d}d`];
+}
+function prog(t){
+  if(!t.subtasks?.length) return t.done?100:0;
+  const d=progress[t._id]||[];
+  return Math.round(d.length/t.subtasks.length*100);
+}
+function tLabel(t){
+  if(t==='col') return'<span class="tag tbl">👥 Colaborativa</span>';
+  if(t==='prueba') return'<span class="tag tpu">📝 Prueba</span>';
+  return'<span class="tag" style="background:#fdf3e8;color:#b87c10">👤 Independiente</span>';
+}
+
+// ═══════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════
+function rebuildSB(){
+  document.getElementById('sb-courses').innerHTML=courses.map(c=>`
+    <div class="nav" onclick="setView('course:${c.period}',this)">
+      <span>📘</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.period}·${c.code}</span>
+      <span class="nbadge">${tasks.filter(t=>t.course===c.period).length}</span>
+    </div>`).join('');
+
+  document.getElementById('sb-comm').innerHTML=courses.map(c=>`
+    <div class="nav" onclick="openComm('${c.period}',this)">
+      <span>📨</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.period} · Mensajería</span>
+      <span class="nbadge">${(students[c.period]||[]).length}</span>
+    </div>`).join('');
+
+  ['f-crs','e-crs'].forEach(id=>{
+    const s=document.getElementById(id);if(!s)return;
+    const p=s.value;
+    s.innerHTML=courses.map(c=>`<option value="${c.period}">${c.period}·${c.name}(${c.code})</option>`).join('');
+    if(p)s.value=p;
+  });
+
+  document.getElementById('b-all').textContent=tasks.length;
+  document.getElementById('b-pen').textContent=tasks.filter(t=>!t.done&&prog(t)===0).length;
+  document.getElementById('b-pro').textContent=tasks.filter(t=>!t.done&&prog(t)>0).length;
+  document.getElementById('b-don').textContent=tasks.filter(t=>t.done).length;
+  const tot=tasks.reduce((s,t)=>s+t.pts,0);
+  const don=tasks.filter(t=>t.done).reduce((s,t)=>s+t.pts,0);
+  document.getElementById('s-tot').textContent=tot;
+  document.getElementById('s-don').textContent=don;
+  document.getElementById('s-pct').textContent=tot?Math.round(don/tot*100)+'%':'0%';
+}
+
+// ═══════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════
+function setView(view,el){
+  cView=view;
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
+  if(el)el.classList.add('on');
+  document.getElementById('tc').style.display='';
+  document.getElementById('comm-panel').style.display='none';
+  document.getElementById('fbar').style.display='';
+  document.getElementById('btn-new').style.display='';
+  let a='Todas las',b='tareas';
+  if(view==='pending'){a='Tareas';b='pendientes';}
+  else if(view==='inprogress'){a='En';b='progreso';}
+  else if(view==='done'){a='Tareas';b='completadas';}
+  else if(view.startsWith('course:')){
+    const cid=view.replace('course:','');
+    const c=courses.find(c=>c.period===cid);
+    a='Período';b=c?c.period:cid;
+  }
+  document.getElementById('v-title').innerHTML=`${a} <span>${b}</span>`;
+  document.getElementById('v-sub').textContent='Gestiona y trabaja tus actividades académicas';
+  render();
+}
+
+async function openComm(period,el){
+  ccourse=period;cact='';cfil='todos';csel.clear();
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
+  if(el)el.classList.add('on');
+  document.getElementById('tc').style.display='none';
+  document.getElementById('comm-panel').style.display='block';
+  document.getElementById('fbar').style.display='none';
+  document.getElementById('btn-new').style.display='none';
+  const c=courses.find(c=>c.period===period);
+  document.getElementById('v-title').innerHTML=`Mensajería <span>${c?.period||period}</span>`;
+  document.getElementById('v-sub').textContent=`Estudiantes y comunicaciones · ${c?.name||''}`;
+  // Load students and entregas from API
+  await loadStudents(period);
+  renderComm();
+}
+
+async function loadStudents(period){
+  try{
+    const sts = await api('GET',`/api/students?course=${period}`);
+    students[period] = sts;
+    // load entregas for this course
+    const courseTaskIds = tasks.filter(t=>t.course===period).map(t=>t._id);
+    const ents = await api('GET',`/api/entregas?course=${period}`);
+    ents.forEach(e=>{ entregas[`${e.studentId}__${e.taskId}`]=e.estado; });
+  }catch(e){ toast('Error cargando estudiantes: '+e.message,'err'); }
+}
+
+function setF(f,el){
+  cFilter=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER TASKS
+// ═══════════════════════════════════════════════════
+function getVis(){
+  let l=[...tasks];
+  if(cView==='pending') l=l.filter(t=>!t.done&&prog(t)===0);
+  else if(cView==='inprogress') l=l.filter(t=>!t.done&&prog(t)>0);
+  else if(cView==='done') l=l.filter(t=>t.done);
+  else if(cView.startsWith('course:')) l=l.filter(t=>t.course===cView.replace('course:',''));
+  if(cFilter==='urgent') l=l.filter(t=>!t.done&&dLeft(t.due)<=7);
+  else if(cFilter==='ind') l=l.filter(t=>t.tipo==='ind');
+  else if(cFilter==='col') l=l.filter(t=>t.tipo==='col');
+  else if(cFilter==='prueba') l=l.filter(t=>t.tipo==='prueba');
+  else if(['Inicial','Intermedio','Final'].includes(cFilter)) l=l.filter(t=>t.momento===cFilter);
+  return l.sort((a,b)=>{if(a.done!==b.done)return a.done?1:-1;return dLeft(a.due)-dLeft(b.due)});
+}
+
+function render(){
+  const list=getVis();
+  const tc=document.getElementById('tc');
+  rebuildSB();
+  if(!list.length){tc.innerHTML='<div class="empty"><div style="font-size:3rem">🎉</div><div>No hay tareas en esta vista</div></div>';return;}
+  tc.innerHTML='';
+  list.forEach(t=>{
+    const[tc2,tt]=statusTag(t);
+    const p=prog(t);
+    const ds=progress[t._id]||[];
+    const mc={Inicial:'#1e4f8a',Intermedio:'#b87c10',Final:'#2a6e4e'}[t.momento]||'#8a8278';
+    const mb={Inicial:'#eaf2fd',Intermedio:'#fdf6e3',Final:'#eafaf1'}[t.momento]||'#f0ede8';
+    const sHTML=(t.subtasks||[]).map((s,i)=>`<div class="sitem ${ds.includes(i)?'sdone':''}" onclick="togSub('${t._id}',${i},this)"><div class="schk"></div><div class="slbl">${s}</div></div>`).join('');
+    const aiHTML=(t.aiHistory||[]).map(m=>`<div class="aim ${m.role}">${m.role==='assistant'?'✦ ':''}${m.content}</div>`).join('');
+    const rHTML=(t.recursos||[]).map(r=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.8rem;color:var(--muted)">📎 ${r}</div>`).join('');
+    const cb=t.campusUrl?`<a href="${t.campusUrl}" target="_blank" class="btn btn-g btn-sm" style="text-decoration:none;border-color:var(--b);color:var(--b)">🌐 Campus</a>`:'';
+    const card=document.createElement('div');
+    card.className=`tcard ${t.done?'done':''}`;card.id='c-'+t._id;
+    card.innerHTML=`
+      <div class="thead" onclick="togExp('${t._id}')">
+        <div class="tchk" onclick="event.stopPropagation();markD('${t._id}')"></div>
+        <div class="tinfo">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+            <div class="tcourse">${cLabel(t.course)}</div>
+            ${t.momento?`<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;font-weight:700;background:${mb};color:${mc}">${t.momento}</span>`:''}
+          </div>
+          <div class="tname">${t.name}</div>
+          <div class="tdesc">${t.desc||''}</div>
+          <div class="tmeta">${tLabel(t.tipo)}<span class="tag tpts">🏆 ${t.pts}pts</span><span class="tag ${tc2}">${tt}</span><span style="font-size:.72rem;color:var(--muted)" id="prog-${t._id}">📊 ${p}% listo</span></div>
+        </div>
+        <div class="tdue">📅 ${t.due?t.due.split('-').reverse().join('/'):'—'}</div>
+      </div>
+      <div class="tpbar"><div class="tpfill" id="pf-${t._id}" style="width:${p}%;background:${p===100?'#2a6e4e':'#c85a1e'}"></div></div>
+      <div class="tbody" id="b-${t._id}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div><div class="nlbl" style="margin-bottom:8px">📋 Pasos a seguir</div>${sHTML||'<div style="color:var(--muted);font-size:.82rem">Sin pasos definidos</div>'}</div>
+          <div><div class="nlbl">📝 Mis notas</div><textarea class="narea" onchange="saveN('${t._id}',this.value)">${t.notes||''}</textarea></div>
+        </div>
+        ${rHTML?`<div style="margin-bottom:16px"><div class="nlbl" style="margin-bottom:6px">🔗 Recursos del Campus</div><div style="background:var(--soft);border:1px solid var(--border);border-radius:8px;padding:4px 12px">${rHTML}</div></div>`:''}
+        <div class="aipanel">
+          <div class="ait">Asistente IA</div>
+          <div class="aiqb">
+            <button class="aiq" onclick="qAsk('${t._id}','¿Cómo hago esta actividad paso a paso?')">¿Cómo hacerla?</button>
+            <button class="aiq" onclick="qAsk('${t._id}','Dame un ejemplo de respuesta')">Ejemplo</button>
+            <button class="aiq" onclick="qAsk('${t._id}','¿Qué temas debo estudiar?')">¿Qué estudiar?</button>
+            <button class="aiq" onclick="qAsk('${t._id}','¿Cómo estructuro el documento?')">Estructura</button>
+          </div>
+          <div class="aims" id="am-${t._id}">${aiHTML||'<div class="aim loading">Pregúntame sobre esta tarea ✦</div>'}</div>
+          <div class="airow">
+            <input class="aiinp" id="ai-${t._id}" placeholder="¿Qué necesitas?" onkeydown="if(event.key==='Enter')sendAI('${t._id}')">
+            <button class="aibtn" id="ab-${t._id}" onclick="sendAI('${t._id}')">Enviar</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap">
+          ${cb}
+          <button class="btn btn-g btn-sm" onclick="delTask('${t._id}')">🗑</button>
+          <button class="btn btn-g btn-sm" style="border-color:var(--b);color:var(--b)" onclick="openEM('${t._id}')">✏️ Editar</button>
+          <button class="btn btn-p btn-sm" onclick="markD('${t._id}')">${t.done?'↩ Reabrir':'✔ Completar'}</button>
+        </div>
+      </div>`;
+    document.getElementById('tc').appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// TASK ACTIONS
+// ═══════════════════════════════════════════════════
+function togExp(id){document.getElementById('b-'+id)?.classList.toggle('open')}
+
+async function togSub(tid,i,el){
+  const d=progress[tid]||[];
+  const nd=d.includes(i)?d.filter(x=>x!==i):[...d,i];
+  progress[tid]=nd;
+  el.classList.toggle('sdone');
+  const t=tasks.find(t=>t._id===tid);
+  const p=Math.round(nd.length/(t.subtasks?.length||1)*100);
+  const pf=document.getElementById('pf-'+tid);if(pf){pf.style.width=p+'%';pf.style.background=p===100?'#2a6e4e':'#c85a1e';}
+  const pl=document.getElementById('prog-'+tid);if(pl)pl.textContent=`📊 ${p}% listo`;
+  try{ await api('PUT',`/api/tasks/${tid}/progress`,{doneItems:nd}); }
+  catch(e){ toast('Error guardando progreso','err'); }
+}
+
+async function markD(id){
+  const t=tasks.find(t=>t._id===id);if(!t)return;
+  t.done=!t.done;
+  try{
+    await api('PATCH',`/api/tasks/${id}`,{done:t.done});
+    render();
+    toast(t.done?'Tarea completada ✓':'Tarea reabierta');
+  }catch(e){ t.done=!t.done; toast('Error: '+e.message,'err'); }
+}
+
+let notesTimer={};
+async function saveN(id,val){
+  const t=tasks.find(t=>t._id===id);if(t)t.notes=val;
+  clearTimeout(notesTimer[id]);
+  notesTimer[id]=setTimeout(async()=>{
+    try{ await api('PATCH',`/api/tasks/${id}`,{notes:val}); }
+    catch(e){ toast('Error guardando nota','err'); }
+  },800);
+}
+
+async function delTask(id){
+  if(!confirm('¿Eliminar?'))return;
+  try{
+    await api('DELETE',`/api/tasks/${id}`);
+    tasks=tasks.filter(t=>t._id!==id);
+    delete progress[id];
+    render(); toast('Tarea eliminada');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// MODALS — TASKS
+// ═══════════════════════════════════════════════════
+function openNewModal(){document.getElementById('m-new').classList.add('open')}
+function closeNM(){document.getElementById('m-new').classList.remove('open')}
+async function saveNewTask(){
+  const n=document.getElementById('f-nam').value.trim();if(!n){toast('Escribe el nombre','err');return;}
+  try{
+    const task=await api('POST','/api/tasks',{
+      course:document.getElementById('f-crs').value,momento:'',name:n,
+      tipo:document.getElementById('f-tip').value,
+      pts:parseInt(document.getElementById('f-pts').value)||0,
+      due:document.getElementById('f-due').value,
+      desc:document.getElementById('f-dsc').value,
+      subtasks:['Leer instrucciones','Desarrollar la actividad','Revisar antes de entregar','Subir al campus'],
+      recursos:[],notes:'',done:false,aiHistory:[],
+    });
+    tasks.push(task);progress[task._id]=[];
+    closeNM();render();toast('Tarea creada');
+    ['f-nam','f-due','f-pts','f-dsc'].forEach(id=>document.getElementById(id).value='');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+}
+document.getElementById('m-new').addEventListener('click',e=>{if(e.target.id==='m-new')closeNM()});
+
+function openEM(id){
+  const t=tasks.find(t=>t._id===id);if(!t)return;
+  document.getElementById('e-id').value=t._id;
+  document.getElementById('e-nam').value=t.name;
+  document.getElementById('e-due').value=t.due||'';
+  document.getElementById('e-pts').value=t.pts||0;
+  document.getElementById('e-dsc').value=t.desc||'';
+  document.getElementById('e-sub').value=(t.subtasks||[]).join('\n');
+  rebuildSB();
+  document.getElementById('e-crs').value=t.course||'';
+  document.getElementById('e-tip').value=t.tipo||'ind';
+  document.getElementById('m-edit').classList.add('open');
+}
+function closeEM(){document.getElementById('m-edit').classList.remove('open')}
+async function updateTask(){
+  const id=document.getElementById('e-id').value;
+  const t=tasks.find(t=>t._id===id);if(!t)return;
+  const n=document.getElementById('e-nam').value.trim();if(!n){toast('El nombre no puede estar vacío','err');return;}
+  const update={name:n,course:document.getElementById('e-crs').value,tipo:document.getElementById('e-tip').value,
+    due:document.getElementById('e-due').value,pts:parseInt(document.getElementById('e-pts').value)||0,
+    desc:document.getElementById('e-dsc').value,
+    subtasks:document.getElementById('e-sub').value.split('\n').map(s=>s.trim()).filter(Boolean)};
+  try{
+    const updated=await api('PUT',`/api/tasks/${id}`,{...t,...update});
+    const idx=tasks.findIndex(t=>t._id===id);if(idx>-1)tasks[idx]=updated;
+    closeEM();render();toast('Tarea actualizada');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+}
+document.getElementById('m-edit').addEventListener('click',e=>{if(e.target.id==='m-edit')closeEM()});
+
+// ═══════════════════════════════════════════════════
+// MODALS — COURSES
+// ═══════════════════════════════════════════════════
+function openCM(){renderCL();document.getElementById('m-course').classList.add('open')}
+function closeCM(){document.getElementById('m-course').classList.remove('open')}
+function renderCL(){
+  document.getElementById('clist').innerHTML=courses.map(c=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--soft);border:1px solid var(--border);border-radius:8px">
+      <div style="flex:1"><div style="font-weight:700">${c.period}·${c.code}</div>
+        <div style="font-size:.78rem;color:var(--muted)">${c.name}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${tasks.filter(t=>t.course===c.period).length} tareas · ${(students[c.period]||[]).length} estudiantes</div>
+      </div>
+      <button onclick="delCourse('${c._id}','${c.period}')" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:.75rem;font-family:'Cabinet Grotesk',sans-serif">🗑</button>
+    </div>`).join('');
+}
+async function addCourse(){
+  const per=document.getElementById('c-per').value.trim();
+  const nam=document.getElementById('c-nam').value.trim();
+  const cod=document.getElementById('c-cod').value.trim();
+  if(!per||!nam){toast('Período y nombre son obligatorios','err');return;}
+  try{
+    const c=await api('POST','/api/courses',{period:per,name:nam,code:cod||'740508'});
+    courses.push(c);students[c.period]=[];
+    ['c-per','c-nam','c-cod'].forEach(id=>document.getElementById(id).value='');
+    renderCL();render();toast('Curso agregado');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+}
+async function delCourse(id,period){
+  if(!confirm(`¿Eliminar curso? Se eliminarán sus tareas y estudiantes.`))return;
+  try{
+    await api('DELETE',`/api/courses/${id}`);
+    courses=courses.filter(c=>c._id!==id);
+    tasks=tasks.filter(t=>t.course!==period);
+    delete students[period];
+    if(cView===`course:${period}`)cView='all';
+    renderCL();render();toast('Curso eliminado');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+}
+document.getElementById('m-course').addEventListener('click',e=>{if(e.target.id==='m-course')closeCM()});
+
+// ═══════════════════════════════════════════════════
+// AI ASSISTANT
+// ═══════════════════════════════════════════════════
+async function sendAI(tid){
+  const inp=document.getElementById('ai-'+tid);
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';await callAI(tid,msg);
+}
+async function qAsk(tid,msg){await callAI(tid,msg)}
+async function callAI(tid,um){
+  const t=tasks.find(t=>t._id===tid);if(!t)return;
+  const btn=document.getElementById('ab-'+tid);
+  const ms=document.getElementById('am-'+tid);
+  if(!t.aiHistory)t.aiHistory=[];
+  t.aiHistory.push({role:'user',content:um});
+  ms.innerHTML+=`<div class="aim user">${um}</div><div class="aim loading" id="ld-${tid}">✦ Pensando...</div>`;
+  ms.scrollTop=ms.scrollHeight;if(btn)btn.disabled=true;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:`Eres asistente académico UNAD. Curso: "Educación en Tecnología e Informática V" (740508). Tarea: "${t.name}". Tipo: ${t.tipo}. Cierre: ${t.due}. Pts: ${t.pts}. Responde en español, claro y práctico.`,
+        messages:t.aiHistory.map(m=>({role:m.role,content:m.content}))})});
+    const d=await r.json();
+    const rep=d.content?.map(b=>b.text||'').join('')||'Sin respuesta.';
+    t.aiHistory.push({role:'assistant',content:rep});
+    document.getElementById('ld-'+tid)?.remove();
+    ms.innerHTML+=`<div class="aim assistant">✦ ${rep.replace(/\n/g,'<br>')}</div>`;
+    ms.scrollTop=ms.scrollHeight;
+    // Save AI history to DB (async, no await)
+    api('PATCH',`/api/tasks/${tid}`,{aiHistory:t.aiHistory}).catch(()=>{});
+  }catch(e){
+    document.getElementById('ld-'+tid)?.remove();
+    ms.innerHTML+=`<div class="aim loading">⚠ Error de conexión</div>`;
+  }
+  if(btn)btn.disabled=false;
+}
+
+// ═══════════════════════════════════════════════════
+// COMUNICACIONES
+// ═══════════════════════════════════════════════════
+const TPLS={
+  recordatorio:{icon:'⏰',label:'Recordatorio de entrega',color:'#b87c10',bg:'#fdf6e3',
+    asunto:'Recordatorio: {ACTIVIDAD} cierra pronto — {CURSO}',
+    msg:`Hola {NOMBRE},\n\nTe escribo para recordarte que la actividad "{ACTIVIDAD}" del curso {CURSO} cierra próximamente.\n\nRevisa la guía en el campus y envía tu evidencia a tiempo.\n\nQuedo atento/a a tus preguntas.\n\nSaludos,\nDocente UNAD`},
+  felicitacion:{icon:'🌟',label:'Felicitación por entrega',color:'#2a6e4e',bg:'#eafaf1',
+    asunto:'¡Felicitaciones por tu entrega! — {ACTIVIDAD}',
+    msg:`Hola {NOMBRE},\n\nQuiero felicitarte por completar la actividad "{ACTIVIDAD}" en el curso {CURSO}. Tu dedicación es un ejemplo.\n\n¡Sigue así!\n\nSaludos,\nDocente UNAD`},
+  alerta:{icon:'⚠️',label:'Alerta — Sin entregar',color:'#c85a1e',bg:'#fdf0ea',
+    asunto:'Importante: Actividades sin entregar — {CURSO}',
+    msg:`Hola {NOMBRE},\n\nTienes actividades sin entregar en el curso {CURSO} que pueden afectar tu calificación final.\n\nTe invito a ingresar al campus y ponerte al día.\n\nSaludos,\nDocente UNAD`},
+  libre:{icon:'✏️',label:'Mensaje personalizado',color:'#1e4f8a',bg:'#eaf2fd',
+    asunto:'Mensaje del docente — {CURSO}',
+    msg:`Hola {NOMBRE},\n\nEscribe aquí tu mensaje...\n\nSaludos,\nDocente UNAD`},
+};
+const ECFG={
+  pendiente:{label:'⏳ Pendiente',bg:'#fdf6e3',color:'#b87c10'},
+  entrego:  {label:'✅ Entregó',  bg:'#eafaf1',color:'#2a6e4e'},
+  inactivo: {label:'🔴 Inactivo', bg:'#fdecea',color:'#c0392b'},
+};
+
+function getE(sid,tid){ return entregas[`${sid}__${tid}`]||'pendiente'; }
+async function setE(sid,tid,val){
+  entregas[`${sid}__${tid}`]=val;
+  try{ await api('PUT','/api/entregas',{studentId:sid,taskId:tid,estado:val}); }
+  catch(e){ toast('Error guardando estado','err'); }
+  renderComm();
+}
+
+function buildMsg(e,tpl,actId){
+  const c=courses.find(c=>c.period===e.course);
+  const cl=c?`${c.period}·${c.name}`:(e.course||'el curso');
+  const act=tasks.find(t=>t._id===actId);
+  return TPLS[tpl].msg.replace(/{NOMBRE}/g,e.nombre||'Estudiante').replace(/{CURSO}/g,cl).replace(/{ACTIVIDAD}/g,act?act.name:'la actividad');
+}
+function buildAsunto(e,tpl,actId){
+  const c=courses.find(c=>c.period===e.course);
+  const cl=c?`${c.period}·${c.name}`:(e.course||'el curso');
+  const act=tasks.find(t=>t._id===actId);
+  return TPLS[tpl].asunto.replace(/{NOMBRE}/g,e.nombre||'Estudiante').replace(/{CURSO}/g,cl).replace(/{ACTIVIDAD}/g,act?act.name:'la actividad');
+}
+function buildWA(e,tpl,aid){
+  const n=(e.wa||'').replace(/\D/g,'');
+  return`https://wa.me/${n.startsWith('57')?n:'57'+n}?text=${encodeURIComponent(buildMsg(e,tpl,aid))}`;
+}
+function buildMail(e,tpl,aid){
+  return`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(e.email)}&su=${encodeURIComponent(buildAsunto(e,tpl,aid))}&body=${encodeURIComponent(buildMsg(e,tpl,aid))}`;
+}
+
+function renderComm(){
+  const panel=document.getElementById('comm-panel');
+  if(!panel||panel.style.display==='none')return;
+  const c=courses.find(c=>c.period===ccourse);
+  const cSt=students[ccourse]||[];
+  const cActs=tasks.filter(t=>t.course===ccourse);
+
+  let filtered=[...cSt];
+  if(cfil!=='todos'){
+    filtered=cact
+      ?filtered.filter(e=>getE(e._id,cact)===cfil)
+      :filtered.filter(e=>cActs.some(t=>getE(e._id,t._id)===cfil));
+  }
+
+  const total=cSt.length;
+  const pending=cSt.filter(e=>cActs.some(t=>getE(e._id,t._id)==='pendiente')).length;
+  const inactive=cSt.filter(e=>cActs.some(t=>getE(e._id,t._id)==='inactivo')).length;
+  const allDone=cSt.filter(e=>cActs.length>0&&cActs.every(t=>getE(e._id,t._id)==='entrego')).length;
+  const selCnt=filtered.filter(e=>csel.has(e._id)).length;
+
+  const rows=filtered.length===0
+    ?`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">
+        ${total===0?'📂 Sube el Excel de este período para ver los estudiantes':'🔍 No hay estudiantes con ese filtro'}
+      </td></tr>`
+    :filtered.map(e=>{
+        const chk=csel.has(e._id);
+        let estCol='';
+        if(cact){
+          const est=getE(e._id,cact);const cfg=ECFG[est];
+          estCol=`<td><select class="estsel" onchange="setE('${e._id}','${cact}',this.value)"
+            style="background:${cfg.bg};color:${cfg.color};border-color:${cfg.color}40">
+            ${Object.entries(ECFG).map(([k,v])=>`<option value="${k}" ${k===est?'selected':''}>${v.label}</option>`).join('')}
+          </select></td>`;
+        } else {
+          const dots=cActs.slice(0,6).map(t=>{
+            const col={pendiente:'#b87c10',entrego:'#2a6e4e',inactivo:'#c0392b'}[getE(e._id,t._id)];
+            return`<span title="${t.momento}: ${t.name}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${col};margin-right:2px;cursor:help"></span>`;
+          }).join('');
+          estCol=`<td>${dots}${cActs.length>6?`<small style="color:var(--muted)">+${cActs.length-6}</small>`:''}</td>`;
+        }
+        return`<tr style="${chk?'background:#fdf5f0':''}">
+          <td><input type="checkbox" style="accent-color:var(--accent);cursor:pointer" ${chk?'checked':''}
+            onchange="csel[this.checked?'add':'delete']('${e._id}');renderComm()"></td>
+          <td><b>${e.nombre}</b></td>
+          <td style="color:var(--muted);font-size:.8rem">${e.email||'—'}</td>
+          <td style="color:var(--muted);font-size:.8rem">${e.wa||'—'}</td>
+          ${estCol}
+          <td>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              ${e.wa?`<a class="abtn bwa" href="${buildWA(e,ctpl,cact)}" target="_blank">💬 WA</a>`:''}
+              ${e.email?`<a class="abtn bml" href="${buildMail(e,ctpl,cact)}" target="_blank">✉️ Mail</a>`:''}
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+  const tplHTML=Object.entries(TPLS).map(([k,t])=>
+    `<div class="tplcard ${ctpl===k?'sel':''}" onclick="ctpl='${k}';renderComm()">
+      <div style="font-weight:700;font-size:.85rem;color:${t.color};margin-bottom:3px">${t.icon} ${t.label}</div>
+      <div style="font-size:.75rem;color:var(--muted);font-family:'Literata',serif;font-style:italic">${t.msg.split('\n')[2]?.slice(0,50)||''}...</div>
+    </div>`).join('');
+
+  const prevE=filtered[0]||{nombre:'Estudiante',course:ccourse};
+  const prevMsg=buildMsg(prevE,ctpl,cact);
+  const actOpts=cActs.map(t=>`<option value="${t._id}" ${t._id===cact?'selected':''}>[${t.momento}] ${t.name.slice(0,42)}</option>`).join('');
+  const filterBtns=[
+    {k:'todos',l:'👥 Todos'},{k:'pendiente',l:'⏳ Pendientes'},{k:'entrego',l:'✅ Entregaron'},{k:'inactivo',l:'🔴 Inactivos'},
+  ].map(({k,l})=>`<button onclick="cfil='${k}';renderComm()"
+    style="padding:5px 12px;border-radius:99px;border:1.5px solid var(--border);
+    background:${cfil===k?'var(--text)':'var(--card)'};color:${cfil===k?'#fff':'var(--muted)'};
+    cursor:pointer;font-size:.75rem;font-family:'Cabinet Grotesk',sans-serif;font-weight:${cfil===k?700:400}">${l}</button>`).join('');
+
+  panel.innerHTML=`<div style="animation:fadeIn .3s ease">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+      <div class="sbox"><div class="snum">${total}</div><div class="slb">Total</div></div>
+      <div class="sbox" style="background:#fdf6e3;border-color:#f5c84240" onclick="cfil='pendiente';renderComm()"><div class="snum" style="color:#b87c10">${pending}</div><div class="slb">Pendientes</div></div>
+      <div class="sbox" style="background:#fdecea;border-color:#ff5c5c30" onclick="cfil='inactivo';renderComm()"><div class="snum" style="color:#c0392b">${inactive}</div><div class="slb">Inactivos</div></div>
+      <div class="sbox" style="background:#eafaf1;border-color:#2a6e4e30" onclick="cfil='entrego';renderComm()"><div class="snum" style="color:#2a6e4e">${allDone}</div><div class="slb">Entregaron todo</div></div>
+      <div class="sbox"><div class="snum" style="color:var(--accent)">${cActs.length}</div><div class="slb">Actividades</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="ccard">
+        <div class="ctit">📂 Estudiantes del período ${c?.period||''}</div>
+        <div class="upz" id="upz" onclick="document.getElementById('xlinput').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')" ondrop="doDrop(event)">
+          <div style="font-size:2rem;margin-bottom:6px">📊</div>
+          <div style="font-size:.85rem;font-weight:700;margin-bottom:4px">Arrastra o haz clic para subir Excel</div>
+          <div style="font-size:.75rem;color:var(--muted)">Columnas: Nombre · Correo · WhatsApp<br>
+            <span style="color:var(--accent);font-weight:700">→ Se guardan en MongoDB</span></div>
+        </div>
+        <input type="file" id="xlinput" accept=".xlsx,.xls" style="display:none" onchange="doExcel(this)">
+        ${total>0?`<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:.78rem;color:var(--muted)">✅ ${total} estudiantes en MongoDB</span>
+          <button class="btn btn-g btn-sm" onclick="clearStudents()">🗑 Limpiar</button>
+        </div>`:''}
+        <div style="margin-top:14px">
+          <div class="nlbl" style="margin-bottom:6px">Filtrar por estado</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${filterBtns}</div>
+        </div>
+        ${cActs.length>0?`<div style="margin-top:12px">
+          <div class="nlbl" style="margin-bottom:5px">Estado por actividad</div>
+          <select class="fi" onchange="cact=this.value;renderComm()">
+            <option value="">— Resumen de todas —</option>${actOpts}
+          </select>
+          ${cact?`<div style="margin-top:6px;padding:8px 10px;background:#eaf2fd;border-radius:8px;font-size:.75rem;color:#1e4f8a">💡 Cambia el estado en la tabla directamente</div>`:''}
+        </div>`:''}
+      </div>
+      <div class="ccard">
+        <div class="ctit">✉️ Plantilla de mensaje</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">${tplHTML}</div>
+        ${ctpl==='libre'
+          ?`<div class="nlbl" style="margin-bottom:5px">Edita tu mensaje</div><textarea class="narea" style="min-height:120px" oninput="TPLS.libre.msg=this.value">${TPLS.libre.msg}</textarea>`
+          :`<div class="nlbl" style="margin-bottom:5px">Vista previa</div><div class="msgprev">${prevMsg}</div>`}
+      </div>
+    </div>
+    ${selCnt>0?`<div class="bulkbar">
+      <span>📋 <span class="bnum">${selCnt}</span> seleccionados</span>
+      <button class="btn btn-g btn-sm" style="color:#fff;border-color:#fff4" onclick="commSelAll()">☑ Todos visibles</button>
+      <button class="btn btn-g btn-sm" style="color:#fff;border-color:#fff4" onclick="csel.clear();renderComm()">✕ Limpiar</button>
+      <button class="abtn bwa" onclick="bulkWA()">💬 WA en lote</button>
+      <button class="abtn bml" onclick="bulkMail()">✉️ Gmail en lote</button>
+    </div>`:''}
+    <div class="ccard" style="padding:0;overflow:hidden">
+      <div style="padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="ctit" style="margin:0">👥 Período ${c?.period||''} <span style="font-weight:400;color:var(--muted);font-size:.78rem">${filtered.length}${cfil!=='todos'?` de ${total}`:''} registros</span></div>
+        ${filtered.length>0?`<div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:.72rem;color:var(--muted)">⏳=pendiente &nbsp; 🟢=entregó &nbsp; 🔴=inactivo</span>
+          <button class="btn btn-g btn-sm" onclick="commSelAll()">☑ Seleccionar todos</button>
+        </div>`:''}
+      </div>
+      <div style="overflow-x:auto">
+        <table class="sttable">
+          <thead><tr>
+            <th style="width:28px"></th><th>Nombre</th><th>Correo</th><th>WhatsApp</th>
+            <th>${cact?(tasks.find(t=>t._id===cact)?.name?.slice(0,30)+'…'||'Estado'):'Estado actividades'}</th>
+            <th>Enviar</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function commSelAll(){
+  const cActs=tasks.filter(t=>t.course===ccourse);
+  let f=[...(students[ccourse]||[])];
+  if(cfil!=='todos') f=cact?f.filter(e=>getE(e._id,cact)===cfil):f.filter(e=>cActs.some(t=>getE(e._id,t._id)===cfil));
+  f.forEach(e=>csel.add(e._id));renderComm();
+}
+function bulkWA(){
+  const s=(students[ccourse]||[]).filter(e=>csel.has(e._id)&&e.wa);
+  if(!s.length){toast('No hay seleccionados con WhatsApp','err');return;}
+  if(!confirm(`¿Abrir ${s.length} chats de WhatsApp?`))return;
+  s.forEach((e,i)=>setTimeout(()=>window.open(buildWA(e,ctpl,cact),'_blank'),i*600));
+}
+function bulkMail(){
+  const s=(students[ccourse]||[]).filter(e=>csel.has(e._id)&&e.email);
+  if(!s.length){toast('No hay seleccionados con correo','err');return;}
+  if(!confirm(`¿Abrir ${s.length} borradores de Gmail?`))return;
+  s.forEach((e,i)=>setTimeout(()=>window.open(buildMail(e,ctpl,cact),'_blank'),i*700));
+}
+
+// Excel import → API
+function doDrop(ev){ev.preventDefault();document.getElementById('upz')?.classList.remove('drag');const f=ev.dataTransfer.files[0];if(f)procXL(f);}
+function doExcel(inp){const f=inp.files[0];if(f)procXL(f);inp.value='';}
+function procXL(file){
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!data.length){toast('El archivo está vacío','err');return;}
+      const find=(...kws)=>Object.keys(data[0]).find(k=>kws.some(kw=>k.toLowerCase().includes(kw)))||'';
+      const cN=find('nombre','name','estudiante','alumno');
+      const cE=find('correo','email','mail');
+      const cW=find('whatsapp','celular','telefono','teléfono','movil','móvil','wa','cel');
+      if(!cN){toast('No encontré columna "Nombre" en el Excel','err');return;}
+      const payload=data.map(row=>({
+        nombre:String(row[cN]||'').trim(),
+        email:String(row[cE]||'').trim(),
+        wa:String(row[cW]||'').trim().replace(/\s/g,''),
+      })).filter(e=>e.nombre);
+      toast(`Importando ${payload.length} estudiantes...`,'loading');
+      const result=await api('POST','/api/students/bulk',{course:ccourse,students:payload});
+      await loadStudents(ccourse);
+      renderComm();rebuildSB();
+      toast(`✅ ${result.imported} importados · ${result.duplicates} duplicados omitidos`);
+    }catch(err){toast('Error: '+err.message,'err');}
+  };
+  reader.readAsBinaryString(file);
+}
+async function clearStudents(){
+  if(!confirm('¿Limpiar todos los estudiantes de este período? Esta acción no se puede deshacer.'))return;
+  try{
+    await api('DELETE',`/api/students/course/${ccourse}`);
+    students[ccourse]=[];csel.clear();renderComm();rebuildSB();
+    toast('Estudiantes eliminados');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
