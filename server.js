@@ -20,7 +20,6 @@ app.use(express.json({ limit: '2mb' }));
 // Auth middleware (simple API secret)
 function auth(req, res, next) {
   const secret = process.env.API_SECRET;
-  // Si no hay secret configurado, modo libre (solo desarrollo)
   if (!secret || secret === '7226316') return next();
   if (req.headers['x-api-secret'] !== secret) {
     return res.status(401).json({ error: 'No autorizado' });
@@ -73,7 +72,6 @@ app.delete('/api/courses/:id', auth, async (req, res) => {
   try {
     const course = await Course.findByIdAndDelete(req.params.id);
     if (!course) return res.status(404).json({ error: 'Curso no encontrado' });
-    // También eliminar estudiantes y tareas del curso
     await Student.deleteMany({ course: course.period });
     await Task.deleteMany({ course: course.period });
     res.json({ ok: true });
@@ -107,7 +105,6 @@ app.put('/api/tasks/:id', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PATCH solo algunos campos (ej: done, notes, aiHistory)
 app.patch('/api/tasks/:id', auth, async (req, res) => {
   try {
     const allowed = ['done','notes','aiHistory','name','course','tipo','pts','due','desc','subtasks','recursos','momento','campusUrl'];
@@ -123,7 +120,6 @@ app.delete('/api/tasks/:id', auth, async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
     if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
-    // limpiar progreso de subtareas
     await SubtaskProgress.deleteOne({ taskId: req.params.id });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -163,7 +159,7 @@ app.get('/api/students', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Importar array de estudiantes para un curso
+// ── CAMBIO 1: Importar estudiantes en bulk — ahora guarda también la cédula ──
 app.post('/api/students/bulk', auth, async (req, res) => {
   try {
     const { course, students } = req.body;
@@ -173,7 +169,13 @@ app.post('/api/students/bulk', auth, async (req, res) => {
     let imported = 0, duplicates = 0;
     for (const s of students) {
       try {
-        await Student.create({ course, nombre: s.nombre, email: s.email || '', wa: s.wa || '' });
+        await Student.create({
+          course,
+          nombre:  s.nombre,
+          email:   s.email  || '',
+          wa:      s.wa     || '',
+          cedula:  s.cedula || '',   // ← campo nuevo para el cruce
+        });
         imported++;
       } catch (e) {
         if (e.code === 11000) duplicates++;
@@ -193,7 +195,6 @@ app.delete('/api/students/:id', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Eliminar todos los estudiantes de un curso
 app.delete('/api/students/course/:courseId', auth, async (req, res) => {
   try {
     const result = await Student.deleteMany({ course: req.params.courseId });
@@ -204,12 +205,9 @@ app.delete('/api/students/course/:courseId', auth, async (req, res) => {
 // ─────────────────────────────────────────────
 // ENTREGAS (delivery status)
 // ─────────────────────────────────────────────
-
-// GET entregas de todos los estudiantes de un curso, opcionalmente por actividad
 app.get('/api/entregas', auth, async (req, res) => {
   try {
     const { course, taskId } = req.query;
-    // Obtener IDs de estudiantes del curso
     let filter = {};
     if (course) {
       const studentIds = (await Student.find({ course }).select('_id')).map(s => s._id);
@@ -221,7 +219,7 @@ app.get('/api/entregas', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUT — crear o actualizar el estado de entrega de un estudiante en una tarea
+// PUT — actualizar estado individual
 app.put('/api/entregas', auth, async (req, res) => {
   try {
     const { studentId, taskId, estado } = req.body;
@@ -234,6 +232,32 @@ app.put('/api/entregas', auth, async (req, res) => {
       { upsert: true, new: true }
     );
     res.json(entrega);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── CAMBIO 2: POST /api/entregas/bulk — actualizar muchos estados de una sola vez ──
+app.post('/api/entregas/bulk', auth, async (req, res) => {
+  try {
+    const { entregas } = req.body;
+    if (!Array.isArray(entregas) || !entregas.length) {
+      return res.status(400).json({ error: 'Se requiere entregas[]' });
+    }
+
+    // Usar bulkWrite para hacerlo en una sola operación a MongoDB
+    const ops = entregas.map(({ studentId, taskId, estado }) => ({
+      updateOne: {
+        filter: { studentId, taskId },
+        update: { $set: { studentId, taskId, estado } },
+        upsert: true,
+      },
+    }));
+
+    const result = await Entrega.bulkWrite(ops, { ordered: false });
+    res.json({
+      updated:  result.modifiedCount + result.upsertedCount,
+      modified: result.modifiedCount,
+      created:  result.upsertedCount,
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
