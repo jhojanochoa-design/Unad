@@ -39,6 +39,7 @@ const studentSchema = new mongoose.Schema({
   nombre:  { type: String, required: true },
   email:   { type: String, default: '' },
   wa:      { type: String, default: '' },     // WhatsApp number
+  cedula:  { type: String, default: '' },     // ← para cruce con campus UNAD
 }, { timestamps: true });
 
 // Unique per course+nombre+email
@@ -50,7 +51,12 @@ studentSchema.index({ course: 1, nombre: 1, email: 1 }, { unique: true });
 const entregaSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
   taskId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true },
-  estado:    { type: String, enum: ['pendiente','entrego','inactivo'], default: 'pendiente' },
+  estado:    {
+    type: String,
+    // ← 'noentrego' agregado para el cruce con campus
+    enum: ['pendiente','entrego','noentrego','inactivo'],
+    default: 'pendiente'
+  },
 }, { timestamps: true });
 
 entregaSchema.index({ studentId: 1, taskId: 1 }, { unique: true });
