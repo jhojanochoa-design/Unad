@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express    = require('express');
 const mongoose   = require('mongoose');
@@ -107,7 +108,7 @@ app.put('/api/tasks/:id', auth, async (req, res) => {
 
 app.patch('/api/tasks/:id', auth, async (req, res) => {
   try {
-    const allowed = ['done','notes','aiHistory','name','course','tipo','pts','due','desc','subtasks','recursos','momento','campusUrl'];
+    const allowed = ['done','notes','aiHistory','name','course','tipo','pts','due','start','desc','subtasks','recursos','momento','campusUrl'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     const task = await Task.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
