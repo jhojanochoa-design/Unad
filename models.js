@@ -18,7 +18,8 @@ const taskSchema = new mongoose.Schema({
   name:      { type: String, required: true },
   tipo:      { type: String, enum: ['ind','col','prueba'], default: 'ind' },
   pts:       { type: Number, default: 0 },
-  due:       { type: String },               // 'YYYY-MM-DD'
+  due:       { type: String },               // 'YYYY-MM-DD' fecha cierre
+  start:     { type: String },               // 'YYYY-MM-DD' fecha inicio
   desc:      { type: String, default: '' },
   recursos:  [{ type: String }],
   subtasks:  [{ type: String }],
