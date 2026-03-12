@@ -4,9 +4,9 @@ const mongoose = require('mongoose');
 // COURSE MODEL
 // ─────────────────────────────────────────────
 const courseSchema = new mongoose.Schema({
-  period:  { type: String, required: true, unique: true }, // '2281'
-  name:    { type: String, required: true },
-  code:    { type: String, default: '740508' },
+  period:     { type: String, required: true, unique: true }, // '2281'
+  name:       { type: String, required: true },
+  code:       { type: String, default: '740508' },
 }, { timestamps: true });
 
 // ─────────────────────────────────────────────
@@ -41,6 +41,7 @@ const studentSchema = new mongoose.Schema({
   email:   { type: String, default: '' },
   wa:      { type: String, default: '' },     // WhatsApp number
   cedula:  { type: String, default: '' },     // ← para cruce con campus UNAD
+  perfil:  { type: String, enum: ['normal','flexible','inclusion'], default: 'normal' },
 }, { timestamps: true });
 
 // Unique per course+nombre+email
