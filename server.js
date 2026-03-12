@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express    = require('express');
 const mongoose   = require('mongoose');
@@ -184,6 +183,17 @@ app.post('/api/students/bulk', auth, async (req, res) => {
       }
     }
     res.status(201).json({ imported, duplicates });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.patch('/api/students/:id', auth, async (req, res) => {
+  try {
+    const allowed = ['perfil','nombre','email','wa'];
+    const update = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const s = await Student.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!s) return res.status(404).json({ error: 'Estudiante no encontrado' });
+    res.json(s);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
